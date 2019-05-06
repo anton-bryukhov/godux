@@ -8,3 +8,16 @@ type Action struct {
 	Type    string
 	Payload interface{}
 }
+
+type Store struct {
+	state   State
+	reducer Reducer
+}
+
+func (s Store) GetState() State {
+	return s.state
+}
+
+func CreateStore(initialState State, reducer Reducer) Store {
+	return Store{initialState, reducer}
+}

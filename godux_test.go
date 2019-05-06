@@ -1,6 +1,9 @@
 package godux
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestAction(t *testing.T) {
 	t.Run("Action can be created", func(t *testing.T) {
@@ -43,6 +46,36 @@ func TestReducer(t *testing.T) {
 
 		_, got := reducer(42, action).(State)
 		want := true
+
+		assertEqual(t, got, want)
+	})
+}
+
+func TestStore(t *testing.T) {
+	t.Run("Store can be created with passed reducer and inital state", func(t *testing.T) {
+		var reducer Reducer = func(state State, action Action) State {
+			return state
+		}
+		store := CreateStore(0, reducer)
+
+		got := fmt.Sprintf("%v", store.reducer)
+		want := fmt.Sprintf("%v", reducer)
+
+		assertEqual(t, got, want)
+	})
+
+	t.Run("Store returns initial state after creation", func(t *testing.T) {
+		initailState := 0
+
+		store := CreateStore(
+			initailState,
+			func(state State, action Action) State {
+				return state
+			},
+		)
+
+		got := store.GetState()
+		want := initailState
 
 		assertEqual(t, got, want)
 	})
