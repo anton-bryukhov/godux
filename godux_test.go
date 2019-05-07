@@ -1,7 +1,7 @@
 package godux
 
 import (
-	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -36,54 +36,66 @@ func TestAction(t *testing.T) {
 	})
 }
 
-func TestReducer(t *testing.T) {
-	t.Run("Reducer receives state and action and returns state", func(t *testing.T) {
-		action := Action{Type: "INCREMENT"}
-
-		var reducer Reducer = func(state State, action Action) State {
+func TestCombineReducers(t *testing.T) {
+	increment := Action{Type: "INCREMENT"}
+	counter := func(state int, action Action) int {
+		switch action.Type {
+		case "INCREMENT":
+			return state + 1
+		default:
 			return state
 		}
+	}
 
-		_, got := reducer(42, action).(State)
-		want := true
-
-		assertEqual(t, got, want)
-	})
-}
-
-func TestStore(t *testing.T) {
-	t.Run("Store can be created with passed reducer and inital state", func(t *testing.T) {
-		var reducer Reducer = func(state State, action Action) State {
+	toggle := Action{Type: "TOGGLE"}
+	toggler := func(state bool, action Action) bool {
+		switch action.Type {
+		case "TOGGLE":
+			return !state
+		default:
 			return state
 		}
-		store := CreateStore(0, reducer)
+	}
 
-		got := fmt.Sprintf("%v", store.reducer)
-		want := fmt.Sprintf("%v", reducer)
+	t.Run("CombineReducers returns combined reducer if one reducer provided", func(t *testing.T) {
+		combinedReducer := CombineReducers(map[string]interface{}{
+			"counter": counter,
+		})
 
-		assertEqual(t, got, want)
+		got := combinedReducer(State{"counter": 1}, increment)
+		want := State{"counter": 2}
+
+		assertDeepEqual(t, got, want)
 	})
 
-	t.Run("Store returns initial state after creation", func(t *testing.T) {
-		initailState := 0
+	t.Run("CombineReducers returns combined reducer if several reducers provided", func(t *testing.T) {
+		combinedReducer := CombineReducers(map[string]interface{}{
+			"counter": counter,
+			"toggler": toggler,
+		})
 
-		store := CreateStore(
-			initailState,
-			func(state State, action Action) State {
-				return state
-			},
-		)
+		got := combinedReducer(State{"counter": 1, "toggler": false}, increment)
+		want := State{"counter": 2, "toggler": false}
 
-		got := store.GetState()
-		want := initailState
+		assertDeepEqual(t, got, want)
 
-		assertEqual(t, got, want)
+		got = combinedReducer(State{"counter": 1, "toggler": false}, toggle)
+		want = State{"counter": 1, "toggler": true}
+
+		assertDeepEqual(t, got, want)
 	})
 }
 
 func assertEqual(t *testing.T, actual interface{}, expected interface{}) {
 	t.Helper()
 	if actual != expected {
+		t.Fatalf("Actual: '%v', expected: '%v'", actual, expected)
+	}
+}
+
+func assertDeepEqual(t *testing.T, actual interface{}, expected interface{}) {
+	t.Helper()
+	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("Actual: '%v', expected: '%v'", actual, expected)
 	}
 }

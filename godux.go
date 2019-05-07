@@ -1,23 +1,32 @@
 package godux
 
-type Reducer func(state State, action Action) State
-
-type State interface{}
+import (
+	"reflect"
+)
 
 type Action struct {
 	Type    string
 	Payload interface{}
 }
 
-type Store struct {
-	state   State
-	reducer Reducer
-}
+type State map[string]interface{}
+type Reducer func(State, Action) State
 
-func (s Store) GetState() State {
-	return s.state
-}
+func CombineReducers(reducers map[string]interface{}) Reducer {
+	return func(state State, action Action) State {
+		nextState := State{}
 
-func CreateStore(initialState State, reducer Reducer) Store {
-	return Store{initialState, reducer}
+		for key, reducer := range reducers {
+			reducerValue := reflect.ValueOf(reducer)
+			prevState := state[key]
+			reducerArguments := []reflect.Value{
+				reflect.ValueOf(prevState),
+				reflect.ValueOf(action),
+			}
+
+			nextState[key] = reducerValue.Call(reducerArguments)[0].Interface()
+		}
+
+		return nextState
+	}
 }
