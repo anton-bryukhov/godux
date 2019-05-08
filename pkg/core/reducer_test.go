@@ -6,32 +6,12 @@ import (
 )
 
 func TestCombineReducers(t *testing.T) {
-	increment := Action{Type: "INCREMENT"}
-	counter := func(state int, action Action) int {
-		switch action.Type {
-		case "INCREMENT":
-			return state + 1
-		default:
-			return state
-		}
-	}
-
-	toggle := Action{Type: "TOGGLE"}
-	toggler := func(state bool, action Action) bool {
-		switch action.Type {
-		case "TOGGLE":
-			return !state
-		default:
-			return state
-		}
-	}
-
 	t.Run("CombineReducers returns combined reducer if one reducer provided", func(t *testing.T) {
 		combinedReducer := CombineReducers(map[string]interface{}{
-			"counter": counter,
+			"counter": CounterReducer,
 		})
 
-		got := combinedReducer(State{"counter": 1}, increment)
+		got := combinedReducer(State{"counter": 1}, Increment)
 		want := State{"counter": 2}
 
 		AssertDeepEqual(t, got, want)
@@ -39,16 +19,16 @@ func TestCombineReducers(t *testing.T) {
 
 	t.Run("CombineReducers returns combined reducer if several reducers provided", func(t *testing.T) {
 		combinedReducer := CombineReducers(map[string]interface{}{
-			"counter": counter,
-			"toggler": toggler,
+			"counter": CounterReducer,
+			"toggler": TogglerReducer,
 		})
 
-		got := combinedReducer(State{"counter": 1, "toggler": false}, increment)
+		got := combinedReducer(State{"counter": 1, "toggler": false}, Increment)
 		want := State{"counter": 2, "toggler": false}
 
 		AssertDeepEqual(t, got, want)
 
-		got = combinedReducer(State{"counter": 1, "toggler": false}, toggle)
+		got = combinedReducer(State{"counter": 1, "toggler": false}, Toggle)
 		want = State{"counter": 1, "toggler": true}
 
 		AssertDeepEqual(t, got, want)
